@@ -1,0 +1,7 @@
+CC = gcc
+CFLAGS = -march=x86-64 -mtune=native -g
+LINKER =
+OUTPUT = nouveauctl
+
+: foreach src/*.c |> $(CC) -c %f -o %o $(CFLAGS) |> src/%B.o
+: src/*.o |> $(CC) %f -o %o $(LINKER) |> bin/$(OUTPUT)
