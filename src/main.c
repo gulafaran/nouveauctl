@@ -60,7 +60,7 @@ char *get_cards(int printcards) {
   dp = opendir(DRI_PATH);
 
   if(dp != NULL) {
-    while(ep = readdir(dp)) {
+    while((ep = readdir(dp))) {
       if(strcmp(ep->d_name, ".") != 0 && strcmp(ep->d_name, "..") != 0) {
         if(printcards) {
           fprintf(stdout, "%s \n", ep->d_name);
@@ -73,7 +73,7 @@ char *get_cards(int printcards) {
           cdp = opendir(path);
 
           if(cdp != NULL) {
-            while(cep = readdir(cdp)) {
+            while((cep = readdir(cdp))) {
               if(strcmp(cep->d_name, "boost") == 0 || strcmp(cep->d_name, "pstate")) {
                 card = malloc(strlen(ep->d_name) + 1);
                 strcpy(card, ep->d_name);
@@ -106,7 +106,6 @@ void print_file(char *file, char *card) {
   char *path = get_path(file, card);
   FILE *fp;
   char buffer[pbufsize];
-  size_t bytes_read;
   fp = fopen(path, "r");
 
   if(!fp) {

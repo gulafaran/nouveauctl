@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -march=x86-64 -mtune=native -g
+CFLAGS = -march=x86-64 -mtune=native -g -Wall
 LINKER =
 OUTPUT = nouveauctl
 
