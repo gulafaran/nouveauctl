@@ -142,6 +142,38 @@ void set_val(char *file, char *card, char *val) {
   safefree((void **)&path);
 }
 
+void print_clocks(char *file, char *card) {
+  char *path = get_path(file, card);
+  FILE *fp;
+  char buffer[pbufsize];
+  fp = fopen(path, "r");
+
+  if(!fp) {
+    fprintf(stderr, "Error while opening: %s\n", path);
+    fprintf(stderr, "%s\n", strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+
+  char *acline = "AC: ";
+  char *dcline = "DC: ";
+  char *unkline ="--: ";
+  size_t len = strlen(acline); //only needs one len, same amount of chars on all three.
+
+  while(fgets(buffer, pbufsize, fp) != NULL) {
+    if(strncmp(acline, buffer, len) == 0 || strncmp(dcline, buffer, len) == 0 || strncmp(unkline, buffer, len) == 0) {
+      char line[pbufsize];
+      for(int i = len; i < pbufsize; i++)
+        line[i-len] = buffer[i];
+
+      fprintf(stdout, "%s", line);
+    }
+  }
+
+  fclose(fp);
+  fp = NULL;
+  safefree((void **)&path);
+}
+
 void print_help() {
   fprintf(stdout, "Usage: nouveauctl [options]\n\n");
   fprintf(stdout, " Options:\n");
@@ -150,20 +182,18 @@ void print_help() {
   fprintf(stdout, "                              defaults to first found with a pstate and/or boost file,\n");
   fprintf(stdout, "                              if no VALUE is provided print list of available DRI cards.\n\n");
   fprintf(stdout, "  -pVALUE, --pstate=VALUE    set pstate to VALUE, if no VALUE is provided print the file.\n");
-  fprintf(stdout, "  -h, --help                  print this help and exit\n\n");
+  fprintf(stdout, "  -g, --get-clocks           print 'core {HZ} MHz memory {HZ} MHz' of current pstate. to make things\n");
+  fprintf(stdout, "                              easier for bash scripts parsing.\n\n");
+  fprintf(stdout, "  -h, --help                 print this help and exit\n\n");
   exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char **argv) {
-  if(geteuid() != 0) {
-    fprintf(stderr, "Error you cant perform this without you being root. \n");
-    exit(EXIT_FAILURE);
-  }
-
   struct option long_opt[] = {
     {"boost", optional_argument, 0, 'b'},
     {"card", optional_argument, 0, 'c'},
     {"pstate", optional_argument, 0, 'p'},
+    {"get-clocks", no_argument, 0, 'g'},
     {"help", no_argument, 0, 'h'},
     {0, 0, 0, 0}
   };
@@ -171,6 +201,7 @@ int main(int argc, char **argv) {
   int printcards = 0;
   int printboost = 0;
   int printpstate = 0;
+  int printclocks = 0;
   int alloccard = 0;
   char *cardarg = NULL;
   char *boostarg = NULL;
@@ -179,7 +210,7 @@ int main(int argc, char **argv) {
   int option_index = 0;
   int opt;
 
-  while((opt = getopt_long(argc, argv, "c::b::p::h", long_opt, &option_index)) != -1) {
+  while((opt = getopt_long(argc, argv, "c::b::p::gh", long_opt, &option_index)) != -1) {
     switch(opt) {
       case 'b':
         if(optarg) {
@@ -208,14 +239,25 @@ int main(int argc, char **argv) {
         }
       break;
 
+      case 'g':
+        printclocks = 1;
+      break;
+
       default:
         print_help();
+        exit(EXIT_SUCCESS);
       break;
     }
   }
 
   if(argc == 1) {
     print_help();
+    exit(EXIT_SUCCESS);
+  }
+
+  if(geteuid() != 0) {
+    fprintf(stderr, "Error you cant perform this without you being root. \n");
+    exit(EXIT_FAILURE);
   }
 
   if(cardarg == NULL) {
@@ -243,6 +285,10 @@ int main(int argc, char **argv) {
   if(printcards) {
     fprintf(stdout, "Available DRI cards: \n");
     get_cards(1);
+  }
+
+  if(printclocks) {
+    print_clocks(PSTATE_FILE, cardarg);
   }
 
   if(alloccard) {
